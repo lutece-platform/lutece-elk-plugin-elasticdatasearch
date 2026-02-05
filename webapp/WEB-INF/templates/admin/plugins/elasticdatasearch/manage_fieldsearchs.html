@@ -1,0 +1,221 @@
+<style>
+.json-viewer {
+  background: #ffffff;      /* fond blanc */
+  color: #000000; 
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 4px;
+  max-height: 400px;
+  overflow: auto;
+  font-family: monospace;
+  font-size: 13px;
+  white-space: pre;
+}
+</style>
+
+<@box>
+
+	<@boxBody>    
+    <@messages infos=infos />
+    <@paginationAdmin paginator=paginator combo=1 />
+    <div class="clearfix"></div>
+    
+    <@tform id='fieldsearch_search_form' name='fieldsearch_search_form' class='border-bottom pb-3' method='get' action='jsp/admin/plugins/elasticdatasearch/ManageFieldsearchs.jsp' >
+		<@messages errors=errors />
+    			<#list lstSearchField as searchField >
+    				<#if searchField == 'formName'>
+    					<@formGroup labelFor='Type de demande' labelKey='Type de demande'>
+							<@select name='filter_formName' items=lstTypeDemande id='filter_formName' default_value=mapFilterCriteria[searchField]!'*'  />
+						</@formGroup>			
+    				<#elseif searchField == 'timestamp'>
+    					<@formGroup labelFor='Depuis le' labelKey='Depuis le'>
+							<#if mapFilterCriteria[searchField]??>
+							  <#assign dateObj = mapFilterCriteria[searchField]?datetime("yyyy-MM-dd HH:mm:ss")>
+							</#if>
+							<@input type='date' id='filter_${searchField}' name='filter_${searchField}' value=dateObj!'' />
+						</@formGroup>
+    				<#else>
+		    			<@formGroup labelFor='filter_${searchField}' labelKey='${searchField}'>
+				    		<@input type='text' id='filter_${searchField}' name='filter_${searchField}'  maxlength=255 value=mapFilterCriteria[searchField]!'' />
+					    </@formGroup>
+				    </#if>
+				</#list>
+		
+		
+		<@button type='submit' title='#i18n{elasticdatasearch.manage_fieldsearchs.search}' buttonIcon='search'/>		
+					
+    </@tform>
+    
+
+    <#list mapFilterCriteria?keys as key> 
+    	<#if mapFilterCriteria[key]!="" && key != 'formName'>
+	    	<span class="badge bg-primary px-2" > 
+	 			${key} <a href='jsp/admin/plugins/elasticdatasearch/ManageFieldsearchs.jsp?clean_filter=1<#list mapFilterCriteria?keys as x><#if "${x}"!="${key}">&filter_${x}=${mapFilterCriteria["${x}"]} </#if></#list>' class='icon-block'><i class='fas fa-times-circle' style="color:white" ></i></a>
+			</span>
+		</#if> 
+	</#list>
+
+	
+    <div class="clearfix"></div>
+    
+    Nom agents : 
+    <#list lstAgentsNameAndMatricule as nameAgent >
+    	<#if nameAgent?? >
+    	</br>
+    	${nameAgent}
+    	</#if>
+    </#list>
+    </br>
+    <#list lstAgentsName as nameAgent >
+    	<#if nameAgent?? >
+    	<span class="badge bg-primary px-2" > 
+	 			 <a href='jsp/admin/plugins/elasticdatasearch/ManageFieldsearchs.jsp?clean_filter=1&agentName=${nameAgent} ' class='icon-block'><i class='fas' style="color:white" >${nameAgent}</i></a>
+			</span>
+    	</#if>
+    </#list>
+    
+    <@table>
+        <tr>
+             <th>#i18n{elasticdatasearch.manage_fieldsearchs.columnFormName}&nbsp;<a href='jsp/admin/plugins/elasticdatasearch/ManageFieldsearchs.jsp?orderBy=formName'><i class='fas fa-sort'></i></a></th>
+             <th>#i18n{elasticdatasearch.manage_fieldsearchs.columnWorkflowState}&nbsp;<a href='jsp/admin/plugins/elasticdatasearch/ManageFieldsearchs.jsp?orderBy=workflowState'><i class='fas fa-sort'></i></a></th>
+            <th>#i18n{elasticdatasearch.manage_fieldsearchs.columnTimeStamp}&nbsp;<a href='jsp/admin/plugins/elasticdatasearch/ManageFieldsearchs.jsp?orderBy=timestamp'><i class='fas fa-sort'></i></a></th>
+        </tr>
+        <@tableHeadBodySeparator />
+
+        
+
+        <#assign json = "" />
+        <#list fieldsearch_list as attr >
+	<#assign json = "{" />
+	<#list attr.mapAttributes?keys as k>
+	    <#if k != 'fichierURLFileService' >
+		    <#assign json = json + '"' + k + '":"' + (attr.mapAttributes[k])?js_string + '"' />
+		    <#if k_has_next>
+			<#assign json = json + "," />
+		    </#if>
+	    </#if>
+	</#list>
+	<#assign json = json + "}" />
+	<#assign jsonFormat = json?replace("'", " ") />
+        
+        
+        <tr>
+            <td>
+				${attr.formName}
+			</td>
+            <td>
+				${attr.status!''}
+			</td>
+			<td>
+				${attr.dateForm}
+			</td>
+
+			<td>
+				<#if attr.mapAttributes['fichierURLFileService'] ?? >
+				<a href='${attr.mapAttributes['fichierURLFileService']!}'> Telecharger </a> 
+				</#if>
+			</td>
+			<td>
+				   <@aButton title='Details demande' size='' params="data-toggle='modal' data-target='#detailFormAttributes' data-lstattr='${jsonFormat}' "  />
+			</td>
+        </tr>
+        </#list>
+        
+    </@table>
+    
+
+    <@paginationAdmin paginator=paginator />
+
+  </@boxBody>
+</@box>
+
+<@modal id='detailFormAttributes' size='xl'>
+	<@modalHeader modalTitle='Details de la demande' />
+	<@modalBody>
+		<div id='titletable'> </div>
+		
+		<@table class="table rounded rounded-3 overflow-hidden border mb-0 " id="jsonTable" >
+		  <thead>
+		    <@tr>
+		      <@th>#i18n{elasticdatasearch.manage_fieldsearchs.modaleChamp}</@th>
+		      <@th>#i18n{elasticdatasearch.manage_fieldsearchs.modaleValeur}</@th>
+		    </@tr>
+		  </thead>
+		  <tbody></tbody>
+		</@table>
+	
+	
+		
+	</@modalBody>
+</@modal>
+
+<script>
+    const modal = document.getElementById('detailFormAttributes');
+    modal.addEventListener('show.bs.modal', function (event) {
+        //const button = event.relatedTarget;
+        //const values = button.getAttribute('data-lstattr');
+        //document.getElementById('modal-body-attr').innerHTML = values;
+        
+        const btn = event.relatedTarget;
+
+        // Récupération du JSON
+        const json = btn.getAttribute('data-lstattr');
+
+        
+        const jsonString = json; // ta variable string JSON
+
+		try {
+		  const obj = JSON.parse(jsonString);
+		  const prettyJson = JSON.stringify(obj, null, 2);
+
+		  const dataJSON = JSON.parse(jsonString);
+		  document.getElementById('titletable').innerHTML = dataJSON.Nom + " " + dataJSON.Prénom;
+		  const tbody = document.querySelector("#jsonTable tbody");
+		  tbody.innerHTML = ""; // 🔥 on nettoie avant de reconstruire
+
+	Object.entries(dataJSON).forEach(([key, value]) => {
+	  const row = document.createElement("tr");
+
+	  const cellKey = document.createElement("td");
+	  cellKey.textContent = key;
+
+	  const cellValue = document.createElement("td");
+	  cellValue.textContent = value ?? "";
+
+	  row.appendChild(cellKey);
+//	  row.appendChild(cellValue);
+	if (/^\d{13}$/.test(value)) {
+	//row.appendChild( new Date(Number(cellValue)).toLocaleDateString("fr-FR") );
+		cellValue.textContent = new Date(Number(value)).toLocaleDateString("fr-FR") ?? "";
+		//row.appendChild( new Date(Number(value)).toLocaleDateString("fr-FR") );
+		row.appendChild( cellValue );
+	}
+	else {
+		row.appendChild(cellValue);
+	}
+	  tbody.appendChild(row);
+		});  
+		  
+		  
+		  
+		  
+	
+		} catch (e) {
+		  document.getElementById('modal-body-attr').textContent = "JSON invalide";
+		  document.getElementById('modal-body-attr').textContent = e;
+		}
+		
+	
+	
+	
+	
+	
+    });
+    
+    function formatValue(value) {
+  if (/^\d{13}$/.test(value)) {
+    return new Date(Number(value)).toLocaleDateString("fr-FR");
+  }
+  return value;
+}
+</script>

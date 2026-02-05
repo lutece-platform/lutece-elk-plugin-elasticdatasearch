@@ -1,0 +1,1 @@
+# lutece-elk-plugin-elasticdatasearch
